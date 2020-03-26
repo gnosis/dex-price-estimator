@@ -1,0 +1,46 @@
+{
+  "name": "dex-price-estimator",
+  "version": "0.0.1",
+  "description": "A service estimating feasible sell prices for Gnosis Protocol",
+  "main": "build/index.js",
+  "scripts": {
+    "prebuild": "yarn lint:fix",
+    "build": "rimraf build && tsc",
+    "prestart": "yarn build",
+    "start": "node .",
+    "verify": "yarn lint && yarn install --frozen-lockfile",
+    "lint": "eslint src --ext .ts,.js",
+    "lint:fix": "eslint --fix src --ext .ts,.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Gnosis",
+    "Protocol",
+    "price",
+    "estimation",
+    "dfusion"
+  ],
+  "author": "Gnosis",
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn verify"
+    }
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.3",
+    "@types/node": "^13.9.3",
+    "@typescript-eslint/parser": "^2.25.0",
+    "eslint": "^6.8.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.20.1",
+    "eslint-plugin-node": "^11.0.0",
+    "eslint-plugin-standard": "^4.0.1",
+    "eslint-plugin-promise": "^4.2.1",
+    "husky": "^4.2.3",
+    "rimraf": "^3.0.2",
+    "typescript": "^3.8.3"
+  }
+}
