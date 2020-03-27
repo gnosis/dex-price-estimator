@@ -1,5 +1,6 @@
 import { transitiveOrderbook } from '@gnosis.pm/dex-contracts'
 import express from 'express'
+import morgan from 'morgan'
 import Web3 from 'web3'
 import { CategoryServiceFactory, CategoryConfiguration, Category, LogLevel } from 'typescript-logging'
 import { OrderbookFetcher } from './orderbook_fetcher'
@@ -44,6 +45,7 @@ logger.info(`Configuration {
 }`)
 
 export const app = express()
+app.use(morgan('tiny'))
 const web3 = new Web3(argv.node as string)
 
 export const orderbooksFetcher = new OrderbookFetcher(web3, argv.pageSize, logger)
@@ -60,9 +62,8 @@ app.get('/price', (req, res) => {
   const estimatedPrice = transitive.priceToSellBaseToken(req.query.sell)
   if (estimatedPrice) {
     res.json(estimatedPrice.toNumber() * (1 - argv.price_rounding_buffer))
-  } else {
-    res.end()
   }
+  res.end()
 })
 
 export const server = app.listen(argv.port, () => {
