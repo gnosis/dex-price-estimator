@@ -15,6 +15,7 @@ interface Network {
 export class OrderbookFetcher {
   orderbooks: Map<string, Orderbook> = new Map()
   batchExchangeViewer: BatchExchangeViewer | null = null
+  intervalId: NodeJS.Timeout | null = null
 
   constructor(readonly web3: Web3, pageSize: number, logger: CategoryLogger) {
     const poll = async () => {
@@ -24,9 +25,15 @@ export class OrderbookFetcher {
       } catch (error) {
         logger.error(`Failed to fetch Orderbooks: ${error}`, null)
       }
-      setTimeout(poll, POLL_INTERVAL)
+      this.intervalId = setTimeout(poll, POLL_INTERVAL)
     }
     poll()
+  }
+
+  terminate() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId)
+    }
   }
 
   private async loadBatchExchangeViewer(): Promise<BatchExchangeViewer> {

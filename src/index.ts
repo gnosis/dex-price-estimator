@@ -43,10 +43,10 @@ logger.info(`Configuration {
   verbosity: ${argv.verbosity},
 }`)
 
-const app = express()
+export const app = express()
 const web3 = new Web3(argv.node as string)
 
-const orderbooksFetcher = new OrderbookFetcher(web3, argv.pageSize, logger)
+export const orderbooksFetcher = new OrderbookFetcher(web3, argv.pageSize, logger)
 
 /* tslint:disable:no-unused-expression */
 
@@ -65,6 +65,6 @@ app.get('/price', (req, res) => {
   }
 })
 
-app.listen(argv.port, () => {
+export const server = app.listen(argv.port, () => {
   logger.info(`server started at http://localhost:${argv.port}`)
 })
