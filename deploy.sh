@@ -12,7 +12,7 @@ docker build -t gnosispm/dex-price-estimator:$tag_name .;
 docker push gnosispm/dex-price-estimator:$tag_name;
 echo "The image has been pushed";
 
-if [ "$image_name" == "master" ] && [ -n "$AUTODEPLOY_URL" ] && [ -n "$AUTODEPLOY_TOKEN" ]; then
+if [ "$tag_name" == "master" ] && [ -n "$AUTODEPLOY_URL" ] && [ -n "$AUTODEPLOY_TOKEN" ]; then
     # Notifying webhook
     curl -s  \
       --output /dev/null \
