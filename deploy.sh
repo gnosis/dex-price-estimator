@@ -3,7 +3,6 @@
 set -euo pipefail
 tag_name=$1
 
-# Create Docker image if branch master
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin;
 
 PACKAGE_VERSION=$(node -p -e "require('./package.json').version");
