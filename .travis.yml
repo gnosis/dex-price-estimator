@@ -8,17 +8,8 @@ script:
   - yarn test
 services:
   - docker
-after_success:
-  - |
-    # Create Docker image if branch master
-    if [ "$TRAVIS_BRANCH" == "master" ]; then
-      echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin;
-
-      PACKAGE_VERSION=$(node -p -e "require('./package.json').version");
-      echo "Pushing to Docker-hub version $PACKAGE_VERSION, generated from branch $TRAVIS_BRANCH";
-      docker build -t gnosispm/dex-price-estimator:latest .;
-      docker push gnosispm/dex-price-estimator:latest;
-      echo "The image has been pushed";
-    else
-      echo "There's no need to push the image to Docker-hub";
-    fi
+deploy:
+  - provider: script
+    script: deploy.sh $TRAVIS_BRANCH
+    on:
+      branch: master
