@@ -3,6 +3,7 @@
 set -euo pipefail
 tag_name=$1
 
+echo "Docker login"
 echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin;
 
 PACKAGE_VERSION=$(node -p -e "require('./package.json').version");

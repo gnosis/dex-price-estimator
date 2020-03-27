@@ -10,6 +10,6 @@ services:
   - docker
 deploy:
   - provider: script
-    script: deploy.sh $TRAVIS_BRANCH
+    script: ./deploy.sh $TRAVIS_BRANCH
     on:
       branch: master
