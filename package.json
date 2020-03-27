@@ -4,9 +4,7 @@
   "description": "A service estimating feasible sell prices for Gnosis Protocol",
   "main": "build/index.js",
   "scripts": {
-    "prebuild": "yarn lint:fix",
     "build": "rimraf build && tsc",
-    "prestart": "yarn build",
     "start": "node .",
     "verify": "yarn lint && yarn install --frozen-lockfile",
     "lint": "eslint src --ext .ts,.js",
