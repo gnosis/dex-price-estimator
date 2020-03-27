@@ -22,7 +22,7 @@
     "skipLibCheck": true,
     "strict": true,
     "suppressImplicitAnyIndexErrors": true,
-    "types": ["node"],
+    "types": ["node", "jest"],
     "baseUrl": "./src/",
     "outDir": "./build"
   },
