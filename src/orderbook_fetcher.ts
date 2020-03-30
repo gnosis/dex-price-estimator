@@ -7,7 +7,6 @@ import { CategoryLogger } from 'typescript-logging'
 
 import { isKeyOf } from './utilities'
 
-const POLL_INTERVAL = 30000
 interface Network {
   address: string
 }
@@ -17,7 +16,7 @@ export class OrderbookFetcher {
   batchExchangeViewer: BatchExchangeViewer | null = null
   intervalId: NodeJS.Timeout | null = null
 
-  constructor(readonly web3: Web3, pageSize: number, logger: CategoryLogger) {
+  constructor(readonly web3: Web3, pageSize: number, pollFrequency: number, logger: CategoryLogger) {
     const poll = async () => {
       try {
         const contract = await this.loadBatchExchangeViewer()
@@ -25,7 +24,7 @@ export class OrderbookFetcher {
       } catch (error) {
         logger.error(`Failed to fetch Orderbooks: ${error}`, null)
       }
-      this.intervalId = setTimeout(poll, POLL_INTERVAL)
+      this.intervalId = setTimeout(poll, pollFrequency)
     }
     poll()
   }
