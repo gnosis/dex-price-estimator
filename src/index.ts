@@ -8,7 +8,7 @@ import * as yargs from 'yargs'
 
 const argv = yargs
   .env(true)
-  .option('node', {
+  .option('ethereum-node-url', {
     describe: 'RPC endpoint to connect to',
     demand: true,
   })
@@ -41,7 +41,7 @@ const argv = yargs
 CategoryServiceFactory.setDefaultConfiguration(new CategoryConfiguration(LogLevel.fromString(argv.verbosity)))
 const logger = CategoryServiceFactory.getLogger(new Category('dex-price-estimation'))
 logger.info(`Configuration {
-  node: ${argv.node},
+  ethereum-node-url: ${argv['ethereum-node-url']},
   hops: ${argv.hops},
   poll-frequency: ${argv['poll-frequency']},
   price-rounding-buffer: ${argv['price-rounding-buffer']},
@@ -51,7 +51,7 @@ logger.info(`Configuration {
 
 export const app = express()
 app.use(morgan('tiny'))
-const web3 = new Web3(argv.node as string)
+const web3 = new Web3(argv['ethereum-node-url'] as string)
 
 export const orderbooksFetcher = new OrderbookFetcher(web3, argv['page-size'], argv['poll-frequency'], logger)
 
