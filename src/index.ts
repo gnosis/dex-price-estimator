@@ -1,7 +1,8 @@
-import { transitiveOrderbook } from '@gnosis.pm/dex-contracts'
+import { Fraction, transitiveOrderbook } from '@gnosis.pm/dex-contracts'
 import express from 'express'
 import morgan from 'morgan'
 import Web3 from 'web3'
+import BN from 'bn.js'
 import { CategoryServiceFactory, CategoryConfiguration, Category, LogLevel } from 'typescript-logging'
 import { OrderbookFetcher } from './orderbook_fetcher'
 import * as yargs from 'yargs'
@@ -38,6 +39,8 @@ const argv = yargs
     default: 'INFO',
   }).argv
 
+const HTTP_STATUS_UNIMPLEMENTED = 501
+
 CategoryServiceFactory.setDefaultConfiguration(new CategoryConfiguration(LogLevel.fromString(argv.verbosity)))
 const logger = CategoryServiceFactory.getLogger(new Category('dex-price-estimation'))
 logger.info(`Configuration {
@@ -50,23 +53,41 @@ logger.info(`Configuration {
 }`)
 
 export const app = express()
+const router = express.Router()
 app.use(morgan('tiny'))
+app.use('/api/v1/', router)
 const web3 = new Web3(argv['ethereum-node-url'] as string)
 
 export const orderbooksFetcher = new OrderbookFetcher(web3, argv['page-size'], argv['poll-frequency'], logger)
 
 /* tslint:disable:no-unused-expression */
 
-app.get('/orderbook', (req, res) => {
-  const transitive = transitiveOrderbook(orderbooksFetcher.orderbooks, req.query.base, req.query.quote, argv.hops)
-  res.json(JSON.stringify(transitive))
+router.get('/markets/:base-:quote', (req, res) => {
+  if (!req.query.atoms) {
+    res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
+    return
+  }
+  const transitive = transitiveOrderbook(orderbooksFetcher.orderbooks, req.params.base, req.params.quote, argv.hops)
+  res.json(transitive)
 })
 
-app.get('/price', (req, res) => {
-  const transitive = transitiveOrderbook(orderbooksFetcher.orderbooks, req.query.base, req.query.quote, argv.hops)
-  const estimatedPrice = transitive.priceToSellBaseToken(req.query.sell)
+router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', (req, res) => {
+  if (!req.query.atoms) {
+    res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
+    return
+  }
+  const transitive = transitiveOrderbook(orderbooksFetcher.orderbooks, req.params.base, req.params.quote, argv.hops)
+  const sellAmount = new BN(req.params.quoteAmount)
+  const estimatedPrice = transitive.priceToBuyBaseToken(new BN(sellAmount))
   if (estimatedPrice) {
-    res.json(estimatedPrice.toNumber() * (1 - argv['price-rounding-buffer']))
+    const buyAmountInBase =
+      (1 - argv['price-rounding-buffer']) * new Fraction(sellAmount, 1).div(estimatedPrice).toNumber()
+    res.json({
+      baseTokenId: req.params.base,
+      quoteTokenId: req.params.quote,
+      buyAmountInBase,
+      sellAmountInQuote: parseInt(req.params.quoteAmount),
+    })
   } else {
     res.end()
   }

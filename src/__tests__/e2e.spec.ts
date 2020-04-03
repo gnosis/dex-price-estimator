@@ -12,31 +12,33 @@ describe('Price Estimation Server', () => {
       await sleep(1000)
     }
   })
-  describe('GET /orderbook', () => {
+  describe('GET /markets/', () => {
     it('Returns an non empty orderbook for valid token pairs', async () => {
-      const result = await request(app).get('/orderbook?base=1&quote=7')
-      const orderbook = JSON.parse(result.body)
+      const orderbook = (await request(app).get('/api/v1/markets/1-7?atoms=true')).body
       expect(orderbook.bids.length).toBeTruthy()
       expect(orderbook.asks.length).toBeTruthy()
     })
 
-    it('Returns an empty orderbook for invalid requests', async () => {
-      const result = await request(app).get('/orderbook')
-      const orderbook = JSON.parse(result.body)
-      expect(orderbook.bids.length).toBeFalsy()
-      expect(orderbook.asks.length).toBeFalsy()
+    it('Only implements atom based amounts for now', async () => {
+      const estimate = await request(app).get('/api/v1/markets/1-7')
+      expect(estimate.status).toBe(501)
     })
   })
 
-  describe('GET /price', () => {
-    it('Returns a price valid token pairs', async () => {
-      const result = await request(app).get('/price?base=1&quote=7&sell=1000000000000000000')
-      expect(parseFloat(result.body)).toBeGreaterThan(0)
+  describe('GET /markets/.../estimated-buy-amount', () => {
+    it('Returns the estimated buy amount denominated in base tokens', async () => {
+      const estimate = (
+        await request(app).get('/api/v1/markets/1-7/estimated-buy-amount/1000000000000000000?atoms=true')
+      ).body
+      expect(estimate.baseTokenId).toBe('1')
+      expect(estimate.quoteTokenId).toBe('7')
+      expect(estimate.buyAmountInBase).toBeGreaterThan(0)
+      expect(estimate.sellAmountInQuote).toBe(1000000000000000000)
     })
 
-    it('Returns no price for invalid requests', async () => {
-      const result = await request(app).get('/price')
-      expect(parseFloat(result.body)).toBeFalsy()
+    it('Only implements atom based amounts for now', async () => {
+      const estimate = await request(app).get('/api/v1/markets/1-7/estimated-buy-amount/1000000000000000000')
+      expect(estimate.status).toBe(501)
     })
   })
 

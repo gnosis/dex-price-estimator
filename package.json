@@ -5,6 +5,7 @@
   "main": "build/index.js",
   "scripts": {
     "build": "rimraf build && tsc",
+    "prestart": "yarn build",
     "start": "node .",
     "verify": "yarn lint && yarn install --frozen-lockfile",
     "lint": "eslint src --ext .ts,.js",
