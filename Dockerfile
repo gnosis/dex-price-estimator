@@ -32,4 +32,4 @@ EXPOSE 8080
 # Signal handling for PID1 https://github.com/krallin/tini
 ENTRYPOINT ["/sbin/tini", "--"]
 
-CMD [ "yarn", "start" ]
+CMD [ "yarn", "start-no-build" ]
