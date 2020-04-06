@@ -15,7 +15,7 @@ const argv = yargs
   })
   .option('page-size', {
     describe: 'The number of orders to fetch per page',
-    default: 50,
+    default: 100,
   })
   .option('port', {
     describe: 'Port to bind on',

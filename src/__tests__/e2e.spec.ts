@@ -23,6 +23,12 @@ describe('Price Estimation Server', () => {
       const estimate = await request(app).get('/api/v1/markets/1-7')
       expect(estimate.status).toBe(501)
     })
+
+    it('Returns the same orderbook when queried twice in a row', async () => {
+      const first = await request(app).get('/api/v1/markets/1-7?atoms=true')
+      const second = await request(app).get('/api/v1/markets/1-7?atoms=true')
+      expect(first.body).toEqual(second.body)
+    })
   })
 
   describe('GET /markets/.../estimated-buy-amount', () => {
@@ -42,8 +48,8 @@ describe('Price Estimation Server', () => {
     })
   })
 
-  afterAll(() => {
+  afterAll(async () => {
     orderbooksFetcher.terminate()
-    server.close()
+    await server.close()
   })
 })

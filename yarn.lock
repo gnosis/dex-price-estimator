@@ -216,10 +216,10 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@gnosis.pm/dex-contracts@^0.2.6":
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/@gnosis.pm/dex-contracts/-/dex-contracts-0.2.6.tgz#1191989a43fa8a61772b71d36cc3217f88fada9a"
-  integrity sha512-TIcxgF28wtbZ9f2NL3k+yF8tyN847dZ9MjPYWS81X0I+GoHCvuecwfmkbIsTUabr+LgL/+fAjxcWowXaF3Vs7A==
+"@gnosis.pm/dex-contracts@^0.2.8":
+  version "0.2.8"
+  resolved "https://registry.yarnpkg.com/@gnosis.pm/dex-contracts/-/dex-contracts-0.2.8.tgz#c8e76fafe0c79e7385ee08cf1208606af7f8afb0"
+  integrity sha512-NF205eE3bATU6BHcDGwz/2XbO7syRmz0QNvyw59nvDxHHJrrAizr+6PeAPcKn1iQgiR973PTrKxLssAomAj4Tw==
   dependencies:
     bn.js "^5.1.1"
 
