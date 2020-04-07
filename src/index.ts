@@ -5,6 +5,7 @@ import Web3 from 'web3'
 import BN from 'bn.js'
 import { CategoryServiceFactory, CategoryConfiguration, Category, LogLevel } from 'typescript-logging'
 import { OrderbookFetcher } from './orderbook_fetcher'
+import { getHops } from './utilities'
 import * as yargs from 'yargs'
 
 const argv = yargs
@@ -21,8 +22,8 @@ const argv = yargs
     describe: 'Port to bind on',
     default: '8080',
   })
-  .option('hops', {
-    describe: 'The number of intermediate orderbooks to look at when computing the transitive one',
+  .option('max-hops', {
+    describe: 'The maximum number of intermediate orderbooks to look at when computing the transitive one',
     default: 2,
   })
   .option('poll-frequency', {
@@ -45,7 +46,7 @@ CategoryServiceFactory.setDefaultConfiguration(new CategoryConfiguration(LogLeve
 const logger = CategoryServiceFactory.getLogger(new Category('dex-price-estimation'))
 logger.info(`Configuration {
   ethereum-node-url: ${argv['ethereum-node-url']},
-  hops: ${argv.hops},
+  max-hops: ${argv['max-hops']},
   poll-frequency: ${argv['poll-frequency']},
   price-rounding-buffer: ${argv['price-rounding-buffer']},
   page-size: ${argv['page-size']},
@@ -67,7 +68,12 @@ router.get('/markets/:base-:quote', (req, res) => {
     res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
     return
   }
-  const transitive = transitiveOrderbook(orderbooksFetcher.orderbooks, req.params.base, req.params.quote, argv.hops)
+  const transitive = transitiveOrderbook(
+    orderbooksFetcher.orderbooks,
+    req.params.base,
+    req.params.quote,
+    getHops(req, argv['max-hops']),
+  )
   res.json(transitive)
 })
 
@@ -76,7 +82,12 @@ router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', (req, res)
     res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
     return
   }
-  const transitive = transitiveOrderbook(orderbooksFetcher.orderbooks, req.params.base, req.params.quote, argv.hops)
+  const transitive = transitiveOrderbook(
+    orderbooksFetcher.orderbooks,
+    req.params.base,
+    req.params.quote,
+    getHops(req, argv['max-hops']),
+  )
   const sellAmount = new BN(req.params.quoteAmount)
   const estimatedPrice = transitive.priceToBuyBaseToken(new BN(sellAmount))
   if (estimatedPrice) {
