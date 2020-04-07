@@ -5,7 +5,7 @@ import Web3 from 'web3'
 import BN from 'bn.js'
 import { CategoryServiceFactory, CategoryConfiguration, Category, LogLevel } from 'typescript-logging'
 import { OrderbookFetcher } from './orderbook_fetcher'
-import { getHops } from './utilities'
+import { getHops, sortOrderbookBySerializedPrice } from './utilities'
 import * as yargs from 'yargs'
 
 const argv = yargs
@@ -16,7 +16,7 @@ const argv = yargs
   })
   .option('page-size', {
     describe: 'The number of orders to fetch per page',
-    default: 100,
+    default: 50,
   })
   .option('port', {
     describe: 'Port to bind on',
@@ -74,7 +74,7 @@ router.get('/markets/:base-:quote', (req, res) => {
     req.params.quote,
     getHops(req, argv['max-hops']),
   )
-  res.json(transitive)
+  res.json(sortOrderbookBySerializedPrice(transitive))
 })
 
 router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', (req, res) => {
