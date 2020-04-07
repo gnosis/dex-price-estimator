@@ -89,10 +89,14 @@ router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', (req, res)
     getHops(req, argv['max-hops']),
   )
   const sellAmount = new BN(req.params.quoteAmount)
-  const estimatedPrice = transitive.priceToBuyBaseToken(new BN(sellAmount))
+  // The orderbook API only allows us to compute a price for selling base tokens. Here, we want to sell quote tokens.
+  // Thus, we invert the orderbook, sell the requested amount (now in base) and multiply the computed price with the
+  // sell amount in order to compute the buy amount in the original base token. A small rounding buffer is considered
+  // to increase the chances of matching the order if placed.
+  const estimatedPrice = transitive.inverted().priceToSellBaseToken(new BN(sellAmount))
   if (estimatedPrice) {
     const buyAmountInBase =
-      (1 - argv['price-rounding-buffer']) * new Fraction(sellAmount, 1).div(estimatedPrice).toNumber()
+      (1 - argv['price-rounding-buffer']) * new Fraction(sellAmount, 1).mul(estimatedPrice).toNumber()
     res.json({
       baseTokenId: req.params.base,
       quoteTokenId: req.params.quote,
