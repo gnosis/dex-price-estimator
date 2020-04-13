@@ -13,3 +13,7 @@ deploy:
     script: ./deploy.sh $TRAVIS_BRANCH
     on:
       branch: master
+  - provider: script
+    script: ./deploy.sh $TRAVIS_TAG
+    on:
+      tags: true

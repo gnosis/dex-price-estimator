@@ -27,7 +27,7 @@
     }
   },
   "dependencies": {
-    "@gnosis.pm/dex-contracts": "^0.2.8",
+    "@gnosis.pm/dex-contracts": "^0.2.9",
     "@types/yargs": "^15.0.4",
     "express": "^4.17.1",
     "morgan": "^1.10.0",
