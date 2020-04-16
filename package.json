@@ -4,6 +4,7 @@
   "description": "A service estimating feasible sell prices for Gnosis Protocol",
   "main": "build/index.js",
   "scripts": {
+    "bench": "autocannon -c 5 -d 30 'http://localhost:8080/api/v1/markets/1-7/estimated-buy-amount/1000000000000000000?atoms=true'",
     "build": "rimraf build && tsc",
     "prestart": "yarn build",
     "start": "node .",
@@ -42,6 +43,7 @@
     "@types/node": "^13.9.3",
     "@types/supertest": "^2.0.8",
     "@typescript-eslint/parser": "^2.25.0",
+    "autocannon": "^4.6.0",
     "eslint": "^6.8.0",
     "eslint-config-standard": "^14.1.1",
     "eslint-plugin-import": "^2.20.1",
