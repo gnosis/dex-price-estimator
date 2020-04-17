@@ -55,3 +55,10 @@ export ETHEREUM_NODE_URL=<<your endpoint>>
 yarn build
 yarn test
 ```
+
+### Running benchmarks
+
+```
+yarn start -- --ethereum-node-url <your endpoint>
+yarn bench
+```
