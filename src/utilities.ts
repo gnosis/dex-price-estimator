@@ -14,10 +14,23 @@ export function getHops(request: Request, maxHops: number) {
 }
 
 export function sortOrderbookBySerializedPrice(orderbook: Orderbook) {
-  const json = orderbook.toJSON()
-  json.bids.sort(sortDescending)
-  json.asks.sort(sortAscending)
-  return json
+  const { bids, asks } = orderbook.getOffers()
+  bids.sort(sortDescending)
+  asks.sort(sortAscending)
+  return {
+    bids: bids.map(function(bid) {
+      return {
+        price: bid.price.toNumber(),
+        volume: bid.volume.toNumber(),
+      }
+    }),
+    asks: asks.map(function(ask) {
+      return {
+        price: ask.price.toNumber(),
+        volume: ask.volume.toNumber(),
+      }
+    }),
+  }
 }
 
 function sortAscending(left: Offer, right: Offer) {
