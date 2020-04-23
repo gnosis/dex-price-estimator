@@ -1,4 +1,4 @@
-import { app, orderbooksFetcher, server } from '..'
+import { app, orderbooksFetcher, server, pool } from '..'
 import request from 'supertest'
 
 function sleep(time: number) {
@@ -50,6 +50,12 @@ describe('Price Estimation Server', () => {
 
   afterAll(async () => {
     orderbooksFetcher.terminate()
-    await server.close()
+    const promise = new Promise((resolve) => {
+      server.close(() => {
+        resolve()
+      })
+    })
+    await promise
+    pool.terminate(true)
   })
 })

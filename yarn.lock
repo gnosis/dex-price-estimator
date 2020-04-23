@@ -604,6 +604,13 @@
   dependencies:
     "@types/superagent" "*"
 
+"@types/workerpool@^5.0.1":
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/@types/workerpool/-/workerpool-5.0.1.tgz#8d8d1e56779531381da17ea3b640972b21e3ccbc"
+  integrity sha512-X+fNY1+DTYNnMD6NkQeaMeiM8I2GhlaNoUHO3CJB/HyoDjG90e1IWOVhiYPDRVl9tN4C0Jth9eIHo8kWujZS5w==
+  dependencies:
+    "@types/node" "*"
+
 "@types/yargs-parser@*":
   version "15.0.0"
   resolved "https://registry.yarnpkg.com/@types/yargs-parser/-/yargs-parser-15.0.0.tgz#cb3f9f741869e20cce330ffbeb9271590483882d"
@@ -6511,6 +6518,11 @@ word-wrap@~1.2.3:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/word-wrap/-/word-wrap-1.2.3.tgz#610636f6b1f703891bd34771ccb17fb93b47079c"
   integrity sha512-Hz/mrNwitNRh/HUAtM/VT/5VH+ygD6DV7mYKZAtHOrbs8U7lvPS6xf7EJKMF0uW1KJCl0H701g3ZGus+muE5vQ==
+
+workerpool@5.0.4:
+  version "5.0.4"
+  resolved "https://registry.yarnpkg.com/workerpool/-/workerpool-5.0.4.tgz#4f67cb70ff7550a27ab94de25b0b843cd92059a2"
+  integrity sha512-Sywova24Ow2NQ24JPB68bI89EdqMDjUXo4OpofK/QMD7C2ZVMloYBgQ5J3PChcBJHj2vspsmGx1/3nBKXtUkXQ==
 
 wrap-ansi@^6.2.0:
   version "6.2.0"

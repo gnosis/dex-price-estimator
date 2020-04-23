@@ -29,6 +29,22 @@ export class OrderbookFetcher {
     poll()
   }
 
+  serializeOrderbooks(): string {
+    const o: any = {}
+    this.orderbooks.forEach((value, key) => {
+      o[key] = value
+    })
+    return JSON.stringify(o)
+  }
+
+  static deserializeOrderbooks(o: string): Map<string, Orderbook> {
+    const orderbooks = new Map()
+    for (const [key, value] of Object.entries(JSON.parse(o))) {
+      orderbooks.set(key, Orderbook.fromJSON(value))
+    }
+    return orderbooks
+  }
+
   terminate() {
     if (this.intervalId) {
       clearInterval(this.intervalId)

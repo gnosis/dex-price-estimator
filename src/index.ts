@@ -1,12 +1,13 @@
-import { Fraction, transitiveOrderbook } from '@gnosis.pm/dex-contracts'
 import express from 'express'
 import morgan from 'morgan'
 import Web3 from 'web3'
-import BN from 'bn.js'
 import { CategoryServiceFactory, CategoryConfiguration, Category, LogLevel } from 'typescript-logging'
 import { OrderbookFetcher } from './orderbook_fetcher'
-import { getHops, sortOrderbookBySerializedPrice } from './utilities'
+import { getHops } from './utilities'
 import * as yargs from 'yargs'
+import workerpool from 'workerpool'
+import path from 'path'
+import os from 'os'
 
 const argv = yargs
   .env(true)
@@ -34,6 +35,14 @@ const argv = yargs
     describe: 'The safety margin to subtract from the estimated price, in order to make it more likely to be matched',
     default: 0.001,
   })
+  .option('num-threads', {
+    describe: 'The number of threads to use for request handling.',
+    default: os.cpus().length,
+  })
+  .option('max-queue-size', {
+    describe: 'The maximum number of requests to queue when all threads are occupied.',
+    default: os.cpus().length * 2,
+  })
   .option('verbosity', {
     describe: 'log level',
     choices: ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],
@@ -51,6 +60,7 @@ logger.info(`Configuration {
   price-rounding-buffer: ${argv['price-rounding-buffer']},
   page-size: ${argv['page-size']},
   verbosity: ${argv.verbosity},
+  num-threads: ${argv['num-threads']},
 }`)
 
 export const app = express()
@@ -59,54 +69,47 @@ app.use(morgan('tiny'))
 app.use('/api/v1/', router)
 const web3 = new Web3(argv['ethereum-node-url'] as string)
 
+const poolOptions = {
+  minWorkers: argv['num-threads'],
+  maxWorkers: argv['num-threads'],
+  maxQueueSize: argv['max-queue-size'],
+}
+export const pool = workerpool.pool(path.join(__dirname, '../build/worker.js'), poolOptions)
+
 export const orderbooksFetcher = new OrderbookFetcher(web3, argv['page-size'], argv['poll-frequency'], logger)
 
 /* tslint:disable:no-unused-expression */
 
-router.get('/markets/:base-:quote', (req, res) => {
+router.get('/markets/:base-:quote', async (req, res) => {
   if (!req.query.atoms) {
     res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
     return
   }
-  const transitive = transitiveOrderbook(
-    orderbooksFetcher.orderbooks,
+  const serialized = orderbooksFetcher.serializeOrderbooks()
+  const result = await pool.exec('markets', [
+    serialized,
     req.params.base,
     req.params.quote,
     getHops(req, argv['max-hops']),
-  )
-  res.json(sortOrderbookBySerializedPrice(transitive))
+  ])
+  res.json(result)
 })
 
-router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', (req, res) => {
+router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', async (req, res) => {
   if (!req.query.atoms) {
     res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
     return
   }
-  const transitive = transitiveOrderbook(
-    orderbooksFetcher.orderbooks,
+  const serialized = orderbooksFetcher.serializeOrderbooks()
+  const result = await pool.exec('estimatedBuyAmount', [
+    serialized,
     req.params.base,
     req.params.quote,
     getHops(req, argv['max-hops']),
-  )
-  const sellAmount = new BN(req.params.quoteAmount)
-  // The orderbook API only allows us to compute a price for selling base tokens. Here, we want to sell quote tokens.
-  // Thus, we invert the orderbook, sell the requested amount (now in base) and multiply the computed price with the
-  // sell amount in order to compute the buy amount in the original base token. A small rounding buffer is considered
-  // to increase the chances of matching the order if placed.
-  const estimatedPrice = transitive.inverted().priceToSellBaseToken(new BN(sellAmount))
-  if (estimatedPrice) {
-    const buyAmountInBase =
-      (1 - argv['price-rounding-buffer']) * new Fraction(sellAmount, 1).mul(estimatedPrice).toNumber()
-    res.json({
-      baseTokenId: req.params.base,
-      quoteTokenId: req.params.quote,
-      buyAmountInBase,
-      sellAmountInQuote: parseInt(req.params.quoteAmount),
-    })
-  } else {
-    res.end()
-  }
-  res.end()
+    req.params.quoteAmount,
+    argv['price-rounding-buffer'],
+  ])
+  res.json(result)
 })
 
 export const server = app.listen(argv.port, () => {
