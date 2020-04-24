@@ -5,7 +5,8 @@ import { BatchExchangeViewer } from '@gnosis.pm/dex-contracts/build/types/BatchE
 import batchExchangeViewerAbi from '@gnosis.pm/dex-contracts/build/contracts/BatchExchangeViewer.json'
 import { CategoryLogger } from 'typescript-logging'
 
-import { isKeyOf } from './utilities'
+import { isKeyOf, executeWithMetrics } from './utilities'
+import { orderBookFetcher } from './metrics'
 
 interface Network {
   address: string
@@ -18,13 +19,23 @@ export class OrderbookFetcher {
 
   constructor(readonly web3: Web3, pageSize: number, pollFrequency: number, logger: CategoryLogger) {
     const poll = async () => {
-      try {
-        const contract = await this.loadBatchExchangeViewer()
-        this.orderbooks = await updateOrderbooks(contract, pageSize, logger)
-      } catch (error) {
-        logger.error(`Failed to fetch Orderbooks: ${error}`, null)
-      }
-      this.intervalId = setTimeout(poll, pollFrequency)
+      const { totalCount, errorsCount, durationsTotals } = orderBookFetcher
+
+      executeWithMetrics({
+        totalCount,
+        errorsCount,
+        durationsTotals,
+
+        runnable: async () => {
+          try {
+            const contract = await this.loadBatchExchangeViewer()
+            this.orderbooks = await updateOrderbooks(contract, pageSize, logger)
+          } catch (error) {
+            logger.error(`Failed to fetch Orderbooks: ${error}`, null)
+          }
+          this.intervalId = setTimeout(poll, pollFrequency)
+        },
+      })
     }
     poll()
   }
@@ -47,7 +58,7 @@ export class OrderbookFetcher {
 
   terminate() {
     if (this.intervalId) {
-      clearInterval(this.intervalId)
+      clearTimeout(this.intervalId)
     }
   }
 
@@ -73,7 +84,7 @@ async function updateOrderbooks(contract: BatchExchangeViewer, pageSize: number,
   const orderbooks = new Map()
   for await (const page of getOpenOrdersPaginated(contract, pageSize)) {
     logger.debug('Page fetched')
-    page.forEach(item => {
+    page.forEach((item) => {
       addItemToOrderbooks(orderbooks, item)
     })
   }

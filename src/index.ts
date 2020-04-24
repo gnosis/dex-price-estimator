@@ -3,11 +3,12 @@ import morgan from 'morgan'
 import Web3 from 'web3'
 import { CategoryServiceFactory, CategoryConfiguration, Category, LogLevel } from 'typescript-logging'
 import { OrderbookFetcher } from './orderbook_fetcher'
-import { getHops } from './utilities'
+import { getHops, executeWithMetrics } from './utilities'
 import * as yargs from 'yargs'
 import workerpool from 'workerpool'
 import path from 'path'
 import os from 'os'
+import { register, buyAmountEstimationMetrics, orderBookMetrics } from './metrics'
 
 const argv = yargs
   .env(true)
@@ -80,36 +81,68 @@ export const orderbooksFetcher = new OrderbookFetcher(web3, argv['page-size'], a
 
 /* tslint:disable:no-unused-expression */
 
+router.get('/metrics', (_req, res) => {
+  res.header('Content-Type', 'text/plain; charset=utf-8')
+  res.send(register.metrics())
+})
+
 router.get('/markets/:base-:quote', async (req, res) => {
-  if (!req.query.atoms) {
-    res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
-    return
-  }
-  const serialized = orderbooksFetcher.serializeOrderbooks()
-  const result = await pool.exec('markets', [
-    serialized,
-    req.params.base,
-    req.params.quote,
-    getHops(req, argv['max-hops']),
-  ])
-  res.json(result)
+  const { base, quote } = req.params
+  const { atoms } = req.query
+  const hops = getHops(req, argv['max-hops'])
+  const { totalCount, count, errorsCount, durationsTotals, durations } = orderBookMetrics
+
+  executeWithMetrics({
+    totalCount,
+    count,
+    errorsCount,
+    durationsTotals,
+    durations,
+    labelValues: { base, quote, hops },
+
+    runnable: async () => {
+      if (!atoms) {
+        res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
+        return
+      }
+      const serialized = orderbooksFetcher.serializeOrderbooks()
+      const result = await pool.exec('markets', [serialized, base, quote, hops])
+      res.json(result)
+    },
+  })
 })
 
 router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', async (req, res) => {
-  if (!req.query.atoms) {
-    res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
-    return
-  }
-  const serialized = orderbooksFetcher.serializeOrderbooks()
-  const result = await pool.exec('estimatedBuyAmount', [
-    serialized,
-    req.params.base,
-    req.params.quote,
-    getHops(req, argv['max-hops']),
-    req.params.quoteAmount,
-    argv['price-rounding-buffer'],
-  ])
-  res.json(result)
+  const { base, quote, quoteAmount } = req.params
+  const { atoms } = req.query
+  const hops = getHops(req, argv['max-hops'])
+  const { totalCount, count, errorsCount, durationsTotals, durations } = buyAmountEstimationMetrics
+
+  executeWithMetrics({
+    totalCount,
+    count,
+    errorsCount,
+    durationsTotals,
+    durations,
+    labelValues: { base, quote, hops },
+
+    runnable: async () => {
+      if (!atoms) {
+        res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
+        return
+      }
+      const serialized = orderbooksFetcher.serializeOrderbooks()
+      const result = await pool.exec('estimatedBuyAmount', [
+        serialized,
+        base,
+        quote,
+        hops,
+        quoteAmount,
+        argv['price-rounding-buffer'],
+      ])
+      res.json(result)
+    },
+  })
 })
 
 export const server = app.listen(argv.port, () => {

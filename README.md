@@ -6,10 +6,11 @@ A service estimating feasible sell prices for Gnosis Protocol.
 
 ## API
 
-The service exposes two endpoints:
+The service exposes the following endpoints:
 
 - _GET /markets/\<baseTokenId>-\<quoteTokenId>[?atoms=true][&hops=\<num>]_: returns the transitive orderbook (containing bids and asks) for the given base and quote token
 - _GET /markets/\<baseTokenId>-\<quoteTokenId>/estimated-buy-amount/\<sellAmountInQuoteToken>[?atoms=true][&hops=\<num>]_: estimates the buy amount (in base tokens) a user can set as a limit order while still expecting to be matched when selling the given amount of quote token.
+- _GET /metrics_: Return Prometheus metrics
 
 If `atoms` is set to true (for now this is the only implemented method) all amounts will be denominated in the smallest available unit (base quantity) of the token.
 If `hops` is set to a number smaller than the `max-hops` command line option with which the server is run, the transitive orderbook is limited to this many intermediate steps. Otherwise `max-hops` is used.
