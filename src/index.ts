@@ -8,7 +8,8 @@ import * as yargs from 'yargs'
 import workerpool from 'workerpool'
 import path from 'path'
 import os from 'os'
-import { register, buyAmountEstimationMetrics, orderBookMetrics } from './metrics'
+import { buyAmountEstimationMetrics, orderBookMetrics } from './metrics'
+import promBundle from 'express-prom-bundle'
 
 const argv = yargs
   .env(true)
@@ -44,6 +45,10 @@ const argv = yargs
     describe: 'The maximum number of requests to queue when all threads are occupied.',
     default: os.cpus().length * 2,
   })
+  .option('base-path', {
+    describe: 'Base path for the Public API',
+    default: '/api/v1',
+  })
   .option('verbosity', {
     describe: 'log level',
     choices: ['TRACE', 'DEBUG', 'INFO', 'WARN', 'ERROR', 'FATAL'],
@@ -51,6 +56,8 @@ const argv = yargs
   }).argv
 
 const HTTP_STATUS_UNIMPLEMENTED = 501
+const basePath = argv['base-path']
+const basePathRegex = new RegExp('^' + basePath)
 
 CategoryServiceFactory.setDefaultConfiguration(new CategoryConfiguration(LogLevel.fromString(argv.verbosity)))
 const logger = CategoryServiceFactory.getLogger(new Category('dex-price-estimation'))
@@ -65,9 +72,22 @@ logger.info(`Configuration {
 }`)
 
 export const app = express()
+
 const router = express.Router()
 app.use(morgan('tiny'))
-app.use('/api/v1/', router)
+app.use(
+  promBundle({
+    includePath: true,
+    metricsPath: basePath + '/metrics',
+    normalizePath: (req, opts) => {
+      // get rid of the base path in the prometheus path label
+      const path = promBundle.normalizePath(req, opts)
+      return path.replace(basePathRegex, '')
+    },
+  }),
+)
+app.use(basePath + '/', router)
+
 const web3 = new Web3(argv['ethereum-node-url'] as string)
 
 const poolOptions = {
@@ -80,11 +100,6 @@ export const pool = workerpool.pool(path.join(__dirname, '../build/worker.js'), 
 export const orderbooksFetcher = new OrderbookFetcher(web3, argv['page-size'], argv['poll-frequency'], logger)
 
 /* tslint:disable:no-unused-expression */
-
-router.get('/metrics', (_req, res) => {
-  res.header('Content-Type', 'text/plain; charset=utf-8')
-  res.send(register.metrics())
-})
 
 router.get('/markets/:base-:quote', async (req, res) => {
   const { base, quote } = req.params

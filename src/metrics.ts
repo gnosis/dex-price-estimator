@@ -1,11 +1,11 @@
-import { Registry, Counter, collectDefaultMetrics, Histogram } from 'prom-client'
+import { register, Counter, Histogram, collectDefaultMetrics } from 'prom-client'
+export { register } from 'prom-client'
 
 const METRIC_PREFIX = 'dex_price_estimator_'
 const BUY_AMOUNT_ESTIMATION_METRIC = METRIC_PREFIX + 'buy_amount_estimation'
 const ORDER_BOOK_METRIC = METRIC_PREFIX + 'order_book'
 const ORDER_BOOK_FETCHER_METRIC = METRIC_PREFIX + 'order_book_fetcher'
 
-export const register = new Registry()
 const baseMetricConfig = { registers: [register] }
 const marketsMetricConfig = { ...baseMetricConfig, labelNames: ['base', 'quote', 'hops'] }
 
