@@ -10,6 +10,8 @@ import path from 'path'
 import os from 'os'
 import { buyAmountEstimationMetrics, orderBookMetrics, createMetricsMiddleware } from './metrics'
 
+const HTTP_STATUS_UNIMPLEMENTED = 501
+
 const argv = yargs
   .env(true)
   .option('ethereum-node-url', {
@@ -54,20 +56,40 @@ const argv = yargs
     default: 'INFO',
   }).argv
 
-const HTTP_STATUS_UNIMPLEMENTED = 501
-const basePath = argv['base-path']
+const {
+  'ethereum-node-url': ethereumNodeUrl,
+  'page-size': pageSize,
+  port,
+  'max-hops': maxHops,
+  'poll-frequency': pollFrequency,
+  'price-rounding-buffer': priceRoundingBuffer,
+  'num-threads': numThreads,
+  'base-path': basePath,
+  verbosity,
+} = argv
 
-CategoryServiceFactory.setDefaultConfiguration(new CategoryConfiguration(LogLevel.fromString(argv.verbosity)))
+CategoryServiceFactory.setDefaultConfiguration(new CategoryConfiguration(LogLevel.fromString(verbosity)))
 const logger = CategoryServiceFactory.getLogger(new Category('dex-price-estimation'))
-logger.info(`Configuration {
-  ethereum-node-url: ${argv['ethereum-node-url']},
-  max-hops: ${argv['max-hops']},
-  poll-frequency: ${argv['poll-frequency']},
-  price-rounding-buffer: ${argv['price-rounding-buffer']},
-  page-size: ${argv['page-size']},
-  verbosity: ${argv.verbosity},
-  num-threads: ${argv['num-threads']},
-}`)
+
+logger.info({
+  msg:
+    'Configuration ' +
+    JSON.stringify(
+      {
+        ethereumNodeUrl,
+        pageSize,
+        port,
+        maxHops,
+        pollFrequency,
+        priceRoundingBuffer,
+        numThreads,
+        basePath,
+        verbosity,
+      },
+      null,
+      2,
+    ),
+})
 
 export const app = express()
 
@@ -76,23 +98,23 @@ app.use(morgan('tiny'))
 app.use(createMetricsMiddleware({ basePath }))
 app.use(basePath + '/', router)
 
-const web3 = new Web3(argv['ethereum-node-url'] as string)
+const web3 = new Web3(ethereumNodeUrl as string)
 
 const poolOptions = {
-  minWorkers: argv['num-threads'],
-  maxWorkers: argv['num-threads'],
+  minWorkers: numThreads,
+  maxWorkers: numThreads,
   maxQueueSize: argv['max-queue-size'],
 }
 export const pool = workerpool.pool(path.join(__dirname, '../build/worker.js'), poolOptions)
 
-export const orderbooksFetcher = new OrderbookFetcher(web3, argv['page-size'], argv['poll-frequency'], logger)
+export const orderbooksFetcher = new OrderbookFetcher(web3, pageSize, pollFrequency, logger)
 
 /* tslint:disable:no-unused-expression */
 
 router.get('/markets/:base-:quote', async (req, res) => {
   const { base, quote } = req.params
   const { atoms } = req.query
-  const hops = getHops(req, argv['max-hops'])
+  const hops = getHops(req, maxHops)
   const { totalCount, count, errorsCount, durationsTotals, durations } = orderBookMetrics
 
   executeWithMetrics({
@@ -118,7 +140,7 @@ router.get('/markets/:base-:quote', async (req, res) => {
 router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', async (req, res) => {
   const { base, quote, quoteAmount } = req.params
   const { atoms } = req.query
-  const hops = getHops(req, argv['max-hops'])
+  const hops = getHops(req, maxHops)
   const { totalCount, count, errorsCount, durationsTotals, durations } = buyAmountEstimationMetrics
 
   executeWithMetrics({
@@ -141,13 +163,13 @@ router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', async (req
         quote,
         hops,
         quoteAmount,
-        argv['price-rounding-buffer'],
+        priceRoundingBuffer,
       ])
       res.json(result)
     },
   })
 })
 
-export const server = app.listen(argv.port, () => {
-  logger.info(`server started at http://localhost:${argv.port}`)
+export const server = app.listen(port, () => {
+  logger.info(`server started at http://localhost:${port}`)
 })
