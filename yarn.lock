@@ -2371,10 +2371,9 @@ expect@^25.2.1:
     jest-message-util "^25.2.1"
     jest-regex-util "^25.2.1"
 
-express-prom-bundle@^6.0.0:
+"express-prom-bundle@git+https://github.com/anxolin/express-prom-bundle#add-missing-metric-name-opt":
   version "6.0.0"
-  resolved "https://registry.yarnpkg.com/express-prom-bundle/-/express-prom-bundle-6.0.0.tgz#e1aff1bddcd4f01359478e150dffd4e6214b88d7"
-  integrity sha512-wRq1yIfMo7oo6lbX38A+g93h/rxSaGk4DkvzIlnF9QGQVBuKmjm/Bkkztu6R6KrMHSuMKWNIrZbZKreuZdEV6w==
+  resolved "git+https://github.com/anxolin/express-prom-bundle#f1f36f0fb71630b979f24a576d3cf6db7d59961b"
   dependencies:
     on-finished "^2.3.0"
     url-value-parser "^2.0.0"

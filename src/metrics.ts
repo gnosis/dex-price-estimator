@@ -1,4 +1,6 @@
 import { register, Counter, Histogram, collectDefaultMetrics } from 'prom-client'
+import { RequestHandler } from 'express'
+import promBundle from 'express-prom-bundle'
 export { register } from 'prom-client'
 
 const METRIC_PREFIX = 'dex_price_estimator_'
@@ -92,6 +94,25 @@ export const orderBookFetcher = {
     help: 'Query duration for the on-chain order book in seconds',
     ...marketsMetricConfig,
   }),
+}
+
+interface CreateMetricsMiddleware {
+  basePath: string
+}
+export function createMetricsMiddleware(params: CreateMetricsMiddleware): RequestHandler {
+  const { basePath } = params
+  const basePathRegex = new RegExp('^' + basePath)
+
+  return promBundle({
+    includePath: true,
+    metricsPath: basePath + '/metrics',
+    httpDurationMetricName: METRIC_PREFIX + 'http_request_duration_seconds',
+    normalizePath: (req, opts) => {
+      // get rid of the base path in the prometheus path label
+      const path = promBundle.normalizePath(req, opts)
+      return path.replace(basePathRegex, '')
+    },
+  })
 }
 
 if (process.env.PROMETHEUS_COLLECT_DEFAULT_METRICS !== 'false') {

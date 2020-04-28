@@ -8,8 +8,7 @@ import * as yargs from 'yargs'
 import workerpool from 'workerpool'
 import path from 'path'
 import os from 'os'
-import { buyAmountEstimationMetrics, orderBookMetrics } from './metrics'
-import promBundle from 'express-prom-bundle'
+import { buyAmountEstimationMetrics, orderBookMetrics, createMetricsMiddleware } from './metrics'
 
 const argv = yargs
   .env(true)
@@ -57,7 +56,6 @@ const argv = yargs
 
 const HTTP_STATUS_UNIMPLEMENTED = 501
 const basePath = argv['base-path']
-const basePathRegex = new RegExp('^' + basePath)
 
 CategoryServiceFactory.setDefaultConfiguration(new CategoryConfiguration(LogLevel.fromString(argv.verbosity)))
 const logger = CategoryServiceFactory.getLogger(new Category('dex-price-estimation'))
@@ -75,17 +73,7 @@ export const app = express()
 
 const router = express.Router()
 app.use(morgan('tiny'))
-app.use(
-  promBundle({
-    includePath: true,
-    metricsPath: basePath + '/metrics',
-    normalizePath: (req, opts) => {
-      // get rid of the base path in the prometheus path label
-      const path = promBundle.normalizePath(req, opts)
-      return path.replace(basePathRegex, '')
-    },
-  }),
-)
+app.use(createMetricsMiddleware({ basePath }))
 app.use(basePath + '/', router)
 
 const web3 = new Web3(argv['ethereum-node-url'] as string)
