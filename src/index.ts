@@ -3,12 +3,12 @@ import morgan from 'morgan'
 import Web3 from 'web3'
 import { CategoryServiceFactory, CategoryConfiguration, Category, LogLevel } from 'typescript-logging'
 import { OrderbookFetcher } from './orderbook_fetcher'
-import { getHops, executeWithMetrics } from './utilities'
+import { getHops } from './utilities'
+import { withOrderBookMetrics, withBuyAmountEstimationMetrics, createMetricsMiddleware } from './metrics'
 import * as yargs from 'yargs'
 import workerpool from 'workerpool'
 import path from 'path'
 import os from 'os'
-import { buyAmountEstimationMetrics, orderBookMetrics, createMetricsMiddleware } from './metrics'
 
 const HTTP_STATUS_UNIMPLEMENTED = 501
 
@@ -65,6 +65,7 @@ const {
   'price-rounding-buffer': priceRoundingBuffer,
   'num-threads': numThreads,
   'base-path': basePath,
+  'max-queue-size': maxQueueSize,
   verbosity,
 } = argv
 
@@ -103,72 +104,44 @@ const web3 = new Web3(ethereumNodeUrl as string)
 const poolOptions = {
   minWorkers: numThreads,
   maxWorkers: numThreads,
-  maxQueueSize: argv['max-queue-size'],
+  maxQueueSize: maxQueueSize,
 }
 export const pool = workerpool.pool(path.join(__dirname, '../build/worker.js'), poolOptions)
 
 export const orderbooksFetcher = new OrderbookFetcher(web3, pageSize, pollFrequency, logger)
 
-/* tslint:disable:no-unused-expression */
+router.get('/markets/:base-:quote', withOrderBookMetrics(async (req, res) => {
+  if (!req.query.atoms) {
+    res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
+    return
+  }
+  const serialized = orderbooksFetcher.serializeOrderbooks()
+  const result = await pool.exec('markets', [
+    serialized,
+    req.params.base,
+    req.params.quote,
+    getHops(req, maxHops),
+  ])
+  res.json(result)
+}))
 
-router.get('/markets/:base-:quote', async (req, res) => {
-  const { base, quote } = req.params
-  const { atoms } = req.query
-  const hops = getHops(req, maxHops)
-  const { totalCount, count, errorsCount, durationsTotals, durations } = orderBookMetrics
+router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', withBuyAmountEstimationMetrics(async (req, res) => {
+  if (!req.query.atoms) {
+    res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
+    return
+  }
+  const serialized = orderbooksFetcher.serializeOrderbooks()
+  const result = await pool.exec('estimatedBuyAmount', [
+    serialized,
+    req.params.base,
+    req.params.quote,
+    getHops(req, maxHops),
+    req.params.quoteAmount,
+    priceRoundingBuffer,
+  ])
+  res.json(result)
+}))
 
-  executeWithMetrics({
-    totalCount,
-    count,
-    errorsCount,
-    durationsTotals,
-    durations,
-    labelValues: { base, quote, hops },
-
-    runnable: async () => {
-      if (!atoms) {
-        res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
-        return
-      }
-      const serialized = orderbooksFetcher.serializeOrderbooks()
-      const result = await pool.exec('markets', [serialized, base, quote, hops])
-      res.json(result)
-    },
-  })
-})
-
-router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', async (req, res) => {
-  const { base, quote, quoteAmount } = req.params
-  const { atoms } = req.query
-  const hops = getHops(req, maxHops)
-  const { totalCount, count, errorsCount, durationsTotals, durations } = buyAmountEstimationMetrics
-
-  executeWithMetrics({
-    totalCount,
-    count,
-    errorsCount,
-    durationsTotals,
-    durations,
-    labelValues: { base, quote, hops },
-
-    runnable: async () => {
-      if (!atoms) {
-        res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
-        return
-      }
-      const serialized = orderbooksFetcher.serializeOrderbooks()
-      const result = await pool.exec('estimatedBuyAmount', [
-        serialized,
-        base,
-        quote,
-        hops,
-        quoteAmount,
-        priceRoundingBuffer,
-      ])
-      res.json(result)
-    },
-  })
-})
 
 export const server = app.listen(port, () => {
   logger.info(`server started at http://localhost:${port}`)

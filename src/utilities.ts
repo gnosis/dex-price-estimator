@@ -42,8 +42,7 @@ function sortDescending(left: Offer, right: Offer) {
   return sortAscending(left, right) * -1
 }
 
-interface ExecuteWithMetricsParams<T extends string> {
-  runnable: () => Promise<void>
+interface MetricsParams<T extends string> {
   totalCount: Counter<T>
   errorsCount: Counter<T>
   durationsTotals: Histogram<T>
@@ -52,28 +51,31 @@ interface ExecuteWithMetricsParams<T extends string> {
   count?: Counter<T>
 }
 
-export async function executeWithMetrics<T extends string>(params: ExecuteWithMetricsParams<T>) {
-  const { runnable, totalCount, count, errorsCount, durationsTotals, durations, labelValues } = params
+export function withMetrics<T extends string>(params: MetricsParams<T>) {
+  const { totalCount, count, errorsCount, durationsTotals, durations, labelValues } = params
 
-  // Total count, and count by labels
-  totalCount.inc()
-  if (count && labelValues) {
-    count.inc(labelValues)
-  }
-  const endTimerTotal = durationsTotals.startTimer()
-  const endTimer = durations?.startTimer()
-  try {
-    // Run
-    await runnable()
-  } catch (error) {
-    // Count errors and rethrow
-    errorsCount.inc()
-    throw error
-  } finally {
-    // End timers
-    endTimerTotal()
-    if (endTimer && labelValues) {
-      endTimer(labelValues)
+  return <T extends (...args: any[]) => any>(runnable: T) =>
+    async (...params: Parameters<T>): Promise<ReturnType<T>> => {
+      // Total count, and count by labels
+      totalCount.inc()
+      if (count && labelValues) {
+        count.inc(labelValues)
+      }
+      const endTimerTotal = durationsTotals.startTimer()
+      const endTimer = durations?.startTimer()
+      try {
+        // Run
+        return await runnable(...params)
+      } catch (error) {
+        // Count errors and rethrow
+        errorsCount.inc()
+        throw error
+      } finally {
+        // End timers
+        endTimerTotal()
+        if (endTimer && labelValues) {
+          endTimer(labelValues)
+        }
+      }
     }
-  }
 }

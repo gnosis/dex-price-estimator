@@ -5,8 +5,8 @@ import { BatchExchangeViewer } from '@gnosis.pm/dex-contracts/build/types/BatchE
 import batchExchangeViewerAbi from '@gnosis.pm/dex-contracts/build/contracts/BatchExchangeViewer.json'
 import { CategoryLogger } from 'typescript-logging'
 
-import { isKeyOf, executeWithMetrics } from './utilities'
-import { orderBookFetcher } from './metrics'
+import { isKeyOf } from './utilities'
+import { withOrderBookFetcherMetrics } from 'metrics'
 
 interface Network {
   address: string
@@ -15,28 +15,19 @@ interface Network {
 export class OrderbookFetcher {
   orderbooks: Map<string, Orderbook> = new Map()
   batchExchangeViewer: BatchExchangeViewer | null = null
-  intervalId: NodeJS.Timeout | null = null
+  timeoutId: NodeJS.Timeout | null = null
 
   constructor(readonly web3: Web3, pageSize: number, pollFrequency: number, logger: CategoryLogger) {
-    const poll = async () => {
-      const { totalCount, errorsCount, durationsTotals } = orderBookFetcher
+    const poll = withOrderBookFetcherMetrics(async () => {
+      try {
+        const contract = await this.loadBatchExchangeViewer()
+        this.orderbooks = await updateOrderbooks(contract, pageSize, logger)
+      } catch (error) {
+        logger.error(`Failed to fetch Orderbooks: ${error}`, null)
+      }
+      this.timeoutId = setTimeout(poll, pollFrequency)
+    })
 
-      executeWithMetrics({
-        totalCount,
-        errorsCount,
-        durationsTotals,
-
-        runnable: async () => {
-          try {
-            const contract = await this.loadBatchExchangeViewer()
-            this.orderbooks = await updateOrderbooks(contract, pageSize, logger)
-          } catch (error) {
-            logger.error(`Failed to fetch Orderbooks: ${error}`, null)
-          }
-          this.intervalId = setTimeout(poll, pollFrequency)
-        },
-      })
-    }
     poll()
   }
 
@@ -57,8 +48,8 @@ export class OrderbookFetcher {
   }
 
   terminate() {
-    if (this.intervalId) {
-      clearTimeout(this.intervalId)
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId)
     }
   }
 

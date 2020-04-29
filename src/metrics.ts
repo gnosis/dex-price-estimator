@@ -1,4 +1,5 @@
 import { register, Counter, Histogram, collectDefaultMetrics } from 'prom-client'
+import { withMetrics } from 'utilities'
 import { RequestHandler } from 'express'
 import promBundle from 'express-prom-bundle'
 export { register } from 'prom-client'
@@ -118,3 +119,7 @@ export function createMetricsMiddleware(params: CreateMetricsMiddleware): Reques
 if (process.env.PROMETHEUS_COLLECT_DEFAULT_METRICS !== 'false') {
   collectDefaultMetrics({ register, prefix: METRIC_PREFIX })
 }
+
+export const withOrderBookMetrics = withMetrics(orderBookMetrics)
+export const withBuyAmountEstimationMetrics = withMetrics(buyAmountEstimationMetrics)
+export const withOrderBookFetcherMetrics = withMetrics(orderBookFetcher)
