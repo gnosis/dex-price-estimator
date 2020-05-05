@@ -2,6 +2,14 @@
 # yarn lockfile v1
 
 
+"@anxolin/express-prom-bundle@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/@anxolin/express-prom-bundle/-/express-prom-bundle-6.0.0.tgz#1969682c1c8f009dd99ab414986565f59501c5fe"
+  integrity sha512-/1EJ1ej9zL1Bc/mnbyafh67QbZ5lLNwZK7TfpJ93gSzqohoFad//9BxyVEuDoVMxTacZGn7wK/Ue3+nj/FZ1AA==
+  dependencies:
+    on-finished "^2.3.0"
+    url-value-parser "^2.0.0"
+
 "@babel/code-frame@^7.0.0", "@babel/code-frame@^7.8.3":
   version "7.8.3"
   resolved "https://registry.yarnpkg.com/@babel/code-frame/-/code-frame-7.8.3.tgz#33e25903d7481181534e12ec0a25f16b6fcf419e"
@@ -2370,13 +2378,6 @@ expect@^25.2.1:
     jest-matcher-utils "^25.2.1"
     jest-message-util "^25.2.1"
     jest-regex-util "^25.2.1"
-
-"express-prom-bundle@git+https://github.com/anxolin/express-prom-bundle#add-missing-metric-name-opt":
-  version "6.0.0"
-  resolved "git+https://github.com/anxolin/express-prom-bundle#f1f36f0fb71630b979f24a576d3cf6db7d59961b"
-  dependencies:
-    on-finished "^2.3.0"
-    url-value-parser "^2.0.0"
 
 express@^4.14.0, express@^4.17.1:
   version "4.17.1"

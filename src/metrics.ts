@@ -1,7 +1,7 @@
 import { register, Counter, Histogram, collectDefaultMetrics } from 'prom-client'
-import { withMetrics } from 'utilities'
 import { RequestHandler } from 'express'
-import promBundle from 'express-prom-bundle'
+import promBundle from '@anxolin/express-prom-bundle'
+import { withMetrics } from './utilities'
 export { register } from 'prom-client'
 
 const METRIC_PREFIX = 'dex_price_estimator_'

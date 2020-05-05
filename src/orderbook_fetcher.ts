@@ -6,7 +6,7 @@ import batchExchangeViewerAbi from '@gnosis.pm/dex-contracts/build/contracts/Bat
 import { CategoryLogger } from 'typescript-logging'
 
 import { isKeyOf } from './utilities'
-import { withOrderBookFetcherMetrics } from 'metrics'
+import { withOrderBookFetcherMetrics } from './metrics'
 
 interface Network {
   address: string

@@ -110,38 +110,38 @@ export const pool = workerpool.pool(path.join(__dirname, '../build/worker.js'), 
 
 export const orderbooksFetcher = new OrderbookFetcher(web3, pageSize, pollFrequency, logger)
 
-router.get('/markets/:base-:quote', withOrderBookMetrics(async (req, res) => {
-  if (!req.query.atoms) {
-    res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
-    return
-  }
-  const serialized = orderbooksFetcher.serializeOrderbooks()
-  const result = await pool.exec('markets', [
-    serialized,
-    req.params.base,
-    req.params.quote,
-    getHops(req, maxHops),
-  ])
-  res.json(result)
-}))
+router.get(
+  '/markets/:base-:quote',
+  withOrderBookMetrics(async (req, res) => {
+    if (!req.query.atoms) {
+      res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
+      return
+    }
+    const serialized = orderbooksFetcher.serializeOrderbooks()
+    const result = await pool.exec('markets', [serialized, req.params.base, req.params.quote, getHops(req, maxHops)])
+    res.json(result)
+  }),
+)
 
-router.get('/markets/:base-:quote/estimated-buy-amount/:quoteAmount', withBuyAmountEstimationMetrics(async (req, res) => {
-  if (!req.query.atoms) {
-    res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
-    return
-  }
-  const serialized = orderbooksFetcher.serializeOrderbooks()
-  const result = await pool.exec('estimatedBuyAmount', [
-    serialized,
-    req.params.base,
-    req.params.quote,
-    getHops(req, maxHops),
-    req.params.quoteAmount,
-    priceRoundingBuffer,
-  ])
-  res.json(result)
-}))
-
+router.get(
+  '/markets/:base-:quote/estimated-buy-amount/:quoteAmount',
+  withBuyAmountEstimationMetrics(async (req, res) => {
+    if (!req.query.atoms) {
+      res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
+      return
+    }
+    const serialized = orderbooksFetcher.serializeOrderbooks()
+    const result = await pool.exec('estimatedBuyAmount', [
+      serialized,
+      req.params.base,
+      req.params.quote,
+      getHops(req, maxHops),
+      req.params.quoteAmount,
+      priceRoundingBuffer,
+    ])
+    res.json(result)
+  }),
+)
 
 export const server = app.listen(port, () => {
   logger.info(`server started at http://localhost:${port}`)

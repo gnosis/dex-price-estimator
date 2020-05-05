@@ -54,7 +54,7 @@ yarn start -- --ethereum-node-url <your endpoint>
 We are using a long poll frequency because to fetch the orderbook only once.
 
 ```
-export ETHEREUM_NODE_URL=<<your endpoint>> POLL_FREQUENCY=10000000000
+export ETHEREUM_NODE_URL=<<your endpoint>> POLL_FREQUENCY=2147483647
 yarn build
 yarn test
 ```
