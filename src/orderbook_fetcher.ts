@@ -84,19 +84,22 @@ async function updateOrderbooks(contract: BatchExchangeViewer, pageSize: number,
 }
 
 function addItemToOrderbooks(orderbooks: Map<string, Orderbook>, item: OrderBN) {
+  const MIN_TRADEABLE_VOLUME = new Fraction(10000, 1)
+  const volume = new Fraction(
+    item.remainingAmount.gt(item.sellTokenBalance) ? item.sellTokenBalance : item.remainingAmount,
+    1,
+  )
+  // Skip problematic orders with tiny amounts or invalid prices
+  if (volume.lt(MIN_TRADEABLE_VOLUME) || item.priceDenominator.isZero() || item.priceNumerator.isZero()) {
+    return
+  }
+  const price = new Fraction(item.priceNumerator, item.priceDenominator)
+
   let orderbook = new Orderbook(item.sellToken.toString(), item.buyToken.toString())
   if (!orderbooks.has(orderbook.pair())) {
     orderbooks.set(orderbook.pair(), orderbook)
   }
   // If the orderbook didn't exist we added it
   orderbook = orderbooks.get(orderbook.pair()) as Orderbook
-  const price = new Fraction(item.priceNumerator, item.priceDenominator)
-  const volume = new Fraction(
-    item.remainingAmount.gt(item.sellTokenBalance) ? item.sellTokenBalance : item.remainingAmount,
-    1,
-  )
-  const MIN_TRADEABLE_VOLUME = new Fraction(10000, 1)
-  if (volume.gt(MIN_TRADEABLE_VOLUME)) {
-    orderbook.addAsk(new Offer(price, volume))
-  }
+  orderbook.addAsk(new Offer(price, volume))
 }
