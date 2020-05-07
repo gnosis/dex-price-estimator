@@ -11,6 +11,7 @@ const streamedLogger = CategoryServiceFactory.getLogger(new Category('streamed-o
 
 export class OrderbookFetcher {
   orderbooks: Map<string, Orderbook> = new Map()
+  encodedOrders: Uint8Array = new Uint8Array()
   batchExchangeViewer: BatchExchangeViewer | null = null
   timeoutId: NodeJS.Timeout | null = null
 
@@ -28,7 +29,9 @@ export class OrderbookFetcher {
           await orderbook.update()
         }
         logger.info('Updating orderbooks map...')
-        this.orderbooks = updateOrderbooks(orderbook)
+        const [orderbooks, encodedOrders] = updateOrderbooks(orderbook)
+        this.orderbooks = orderbooks
+        this.encodedOrders = encodedOrders
 
         logger.info('Updated orderbook.')
       } catch (error) {
@@ -68,18 +71,36 @@ export class OrderbookFetcher {
   }
 }
 
-function updateOrderbooks(orderbook: StreamedOrderbook) {
+function updateOrderbooks(orderbook: StreamedOrderbook)
+  : [Map<string, Orderbook>, Uint8Array] {
   const orderbooks = new Map()
+  const encodedOrders: number[] = []
   for (const item of orderbook.getOpenOrders()) {
-    addItemToOrderbooks(orderbooks, {
+    const order: Order<BN> =
+    {
       ...item,
       sellTokenBalance: new BN(item.sellTokenBalance.toString()),
       priceNumerator: new BN(item.priceNumerator.toString()),
       priceDenominator: new BN(item.priceDenominator.toString()),
       remainingAmount: new BN(item.remainingAmount.toString()),
-    })
+    }
+    addItemToOrderbooks(orderbooks, order)
+    addItemToEncodedOrders(encodedOrders, order)
   }
-  return orderbooks
+  return [orderbooks, Uint8Array.from(encodedOrders)]
+}
+
+function addItemToEncodedOrders(appendTo: number[], order: Order<BN>) {
+  // Remove '0x'
+  appendTo.push(...(new BN(order.user.slice(2), 16).toArray('be', 20)))
+  appendTo.push(...(order.sellTokenBalance.toArray('be', 32)))
+  appendTo.push(...(new BN(order.buyToken).toArray('be', 2)))
+  appendTo.push(...(new BN(order.sellToken).toArray('be', 2)))
+  appendTo.push(...(new BN(order.validFrom).toArray('be', 4)))
+  appendTo.push(...(new BN(order.validUntil).toArray('be', 4)))
+  appendTo.push(...(order.priceNumerator.toArray('be', 16)))
+  appendTo.push(...(order.priceDenominator.toArray('be', 16)))
+  appendTo.push(...(order.remainingAmount.toArray('be', 16)))
 }
 
 function addItemToOrderbooks(orderbooks: Map<string, Orderbook>, item: Order<BN>) {

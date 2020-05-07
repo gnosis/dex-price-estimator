@@ -124,12 +124,10 @@ router.get(
       res.sendStatus(HTTP_STATUS_UNIMPLEMENTED)
       return
     }
-    const serialized = orderbooksFetcher.serializeOrderbooks()
     const result = await pool.exec('estimatedBuyAmount', [
-      serialized,
+      orderbooksFetcher.encodedOrders,
       req.params.base,
       req.params.quote,
-      getHops(req, maxHops),
       req.params.quoteAmount,
       priceRoundingBuffer,
     ])

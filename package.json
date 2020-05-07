@@ -30,6 +30,7 @@
   "dependencies": {
     "@anxolin/express-prom-bundle": "^6.0.0",
     "@gnosis.pm/dex-contracts": "^0.3.0",
+    "@gnosis.pm/dex-pricegraph": "0.0.1-alpha.2",
     "express": "^4.17.1",
     "morgan": "^1.10.0",
     "prom-client": "^12.0.0",

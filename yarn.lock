@@ -287,6 +287,11 @@
   dependencies:
     bn.js "^5.1.1"
 
+"@gnosis.pm/dex-pricegraph@0.0.1-alpha.2":
+  version "0.0.1-alpha.2"
+  resolved "https://registry.yarnpkg.com/@gnosis.pm/dex-pricegraph/-/dex-pricegraph-0.0.1-alpha.2.tgz#de093376f47e9d600ea87420076984c648dc8471"
+  integrity sha512-c0f+ublK1ZdIffKjkjQdK8r1w00PyeTVUsOb3v3VLsusdbdJYVJF2ktLSLWwceuTRDOxVmyUHfSCOBa4SMb5Xg==
+
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@istanbuljs/load-nyc-config/-/load-nyc-config-1.0.0.tgz#10602de5570baea82f8afbfa2630b24e7a8cfe5b"

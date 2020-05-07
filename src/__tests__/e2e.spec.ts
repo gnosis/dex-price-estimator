@@ -38,8 +38,8 @@ describe('Price Estimation Server', () => {
       ).body
       expect(estimate.baseTokenId).toBe('1')
       expect(estimate.quoteTokenId).toBe('7')
-      expect(estimate.buyAmountInBase).toBeGreaterThan(0)
-      expect(estimate.sellAmountInQuote).toBe(1000000000000000000)
+      expect(parseInt(estimate.buyAmountInBase)).toBeGreaterThan(0)
+      expect(estimate.sellAmountInQuote).toBe('1000000000000000000')
     })
 
     it('Only implements atom based amounts for now', async () => {
