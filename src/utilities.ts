@@ -7,7 +7,7 @@ export function isKeyOf<T extends object>(obj: T, possibleKey: keyof any): possi
 }
 
 export function getHops(request: Request, maxHops: number) {
-  if (request.query.hops && parseInt(request.query.hops) < maxHops) {
+  if (typeof request.query.hops === 'string' && parseInt(request.query.hops) < maxHops) {
     return parseInt(request.query.hops)
   } else {
     return maxHops
