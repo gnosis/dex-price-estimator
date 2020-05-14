@@ -18,10 +18,6 @@ const argv = yargs
     describe: 'RPC endpoint to connect to',
     demand: true,
   })
-  .option('page-size', {
-    describe: 'The number of orders to fetch per page',
-    default: 500,
-  })
   .option('port', {
     describe: 'Port to bind on',
     default: '8080',
@@ -58,7 +54,6 @@ const argv = yargs
 
 const {
   'ethereum-node-url': ethereumNodeUrl,
-  'page-size': pageSize,
   port,
   'max-hops': maxHops,
   'poll-frequency': pollFrequency,
@@ -78,7 +73,6 @@ logger.info({
     JSON.stringify(
       {
         ethereumNodeUrl,
-        pageSize,
         port,
         maxHops,
         pollFrequency,
@@ -108,7 +102,7 @@ const poolOptions = {
 }
 export const pool = workerpool.pool(path.join(__dirname, '../build/worker.js'), poolOptions)
 
-export const orderbooksFetcher = new OrderbookFetcher(web3, pageSize, pollFrequency, logger)
+export const orderbooksFetcher = new OrderbookFetcher(web3, pollFrequency)
 
 router.get(
   '/markets/:base-:quote',

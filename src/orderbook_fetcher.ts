@@ -1,30 +1,44 @@
+import BN from 'bn.js'
 import Web3 from 'web3'
-import { AbiItem } from 'web3-utils'
-import { getOpenOrdersPaginated, Fraction, Orderbook, Offer, OrderBN } from '@gnosis.pm/dex-contracts'
+import { Fraction, Orderbook, OrderbookJson, Offer, Order, StreamedOrderbook, InvalidAuctionStateError } from '@gnosis.pm/dex-contracts'
 import { BatchExchangeViewer } from '@gnosis.pm/dex-contracts/build/types/BatchExchangeViewer'
-import batchExchangeViewerAbi from '@gnosis.pm/dex-contracts/build/contracts/BatchExchangeViewer.json'
-import { CategoryLogger } from 'typescript-logging'
+import { CategoryServiceFactory, Category } from 'typescript-logging'
 
-import { isKeyOf } from './utilities'
 import { withOrderBookFetcherMetrics } from './metrics'
 
-interface Network {
-  address: string
-}
+const logger = CategoryServiceFactory.getLogger(new Category('orderbook-fetcher'))
+const streamedLogger = CategoryServiceFactory.getLogger(new Category('streamed-orderbook'))
 
 export class OrderbookFetcher {
   orderbooks: Map<string, Orderbook> = new Map()
   batchExchangeViewer: BatchExchangeViewer | null = null
   timeoutId: NodeJS.Timeout | null = null
 
-  constructor(readonly web3: Web3, pageSize: number, pollFrequency: number, logger: CategoryLogger) {
+  constructor(readonly web3: Web3, pollFrequency: number) {
+    let orderbook: StreamedOrderbook | undefined
     const poll = withOrderBookFetcherMetrics(async () => {
       try {
-        const contract = await this.loadBatchExchangeViewer()
-        this.orderbooks = await updateOrderbooks(contract, pageSize, logger)
+        if (orderbook === undefined) {
+          logger.debug('Initializing streamed orderbook...')
+          orderbook = await StreamedOrderbook.init(web3 as any, {
+            debug: (msg) => streamedLogger.debug(msg),
+          })
+        } else {
+          logger.debug('Fetching orderbook updates...')
+          await orderbook.update()
+        }
+        logger.info('Updating orderbooks map...')
+        this.orderbooks = updateOrderbooks(orderbook)
+
+        logger.info('Updated orderbook.')
       } catch (error) {
-        logger.error(`Failed to fetch Orderbooks: ${error}`, null)
+        if (error instanceof InvalidAuctionStateError) {
+          orderbook = undefined
+        }
+
+        logger.error(`Failed to update orderbooks: ${error}`, null)
       }
+
       this.timeoutId = setTimeout(poll, pollFrequency)
     })
 
@@ -41,7 +55,7 @@ export class OrderbookFetcher {
 
   static deserializeOrderbooks(o: string): Map<string, Orderbook> {
     const orderbooks = new Map()
-    for (const [key, value] of Object.entries(JSON.parse(o))) {
+    for (const [key, value] of Object.entries(JSON.parse(o) as OrderbookJson)) {
       orderbooks.set(key, Orderbook.fromJSON(value))
     }
     return orderbooks
@@ -52,38 +66,23 @@ export class OrderbookFetcher {
       clearTimeout(this.timeoutId)
     }
   }
-
-  private async loadBatchExchangeViewer(): Promise<BatchExchangeViewer> {
-    if (this.batchExchangeViewer) {
-      return this.batchExchangeViewer
-    }
-    const networkId = await this.web3.eth.getChainId()
-    if (isKeyOf(batchExchangeViewerAbi.networks, networkId)) {
-      this.batchExchangeViewer = new this.web3.eth.Contract(
-        batchExchangeViewerAbi.abi as AbiItem[],
-        (batchExchangeViewerAbi.networks[networkId] as Network).address,
-      ) as BatchExchangeViewer
-      return this.batchExchangeViewer
-    } else {
-      throw new Error(`Contract not deployed on network with ID ${networkId}`)
-    }
-  }
 }
 
-async function updateOrderbooks(contract: BatchExchangeViewer, pageSize: number, logger: CategoryLogger) {
-  logger.info('Fetching orderbook')
+function updateOrderbooks(orderbook: StreamedOrderbook) {
   const orderbooks = new Map()
-  for await (const page of getOpenOrdersPaginated(contract, pageSize)) {
-    logger.debug('Page fetched')
-    page.forEach((item) => {
-      addItemToOrderbooks(orderbooks, item)
+  for (const item of orderbook.getOpenOrders()) {
+    addItemToOrderbooks(orderbooks, {
+      ...item,
+      sellTokenBalance: new BN(item.sellTokenBalance.toString()),
+      priceNumerator: new BN(item.priceNumerator.toString()),
+      priceDenominator: new BN(item.priceDenominator.toString()),
+      remainingAmount: new BN(item.remainingAmount.toString()),
     })
   }
-  logger.info('Orderbook fetched')
   return orderbooks
 }
 
-function addItemToOrderbooks(orderbooks: Map<string, Orderbook>, item: OrderBN) {
+function addItemToOrderbooks(orderbooks: Map<string, Orderbook>, item: Order<BN>) {
   const MIN_TRADEABLE_VOLUME = new Fraction(10000, 1)
   const volume = new Fraction(
     item.remainingAmount.gt(item.sellTokenBalance) ? item.sellTokenBalance : item.remainingAmount,
