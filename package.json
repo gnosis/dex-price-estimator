@@ -1,6 +1,6 @@
 {
   "name": "dex-price-estimator",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A service estimating feasible sell prices for Gnosis Protocol",
   "main": "build/index.js",
   "scripts": {
