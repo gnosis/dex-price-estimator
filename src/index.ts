@@ -89,7 +89,21 @@ logger.info({
 export const app = express()
 
 const router = express.Router()
-app.use(morgan('tiny'))
+app.use(morgan((tokens, req, res) => {
+  // NOTE: Log the message with the application logger so we get a standard
+  // format and so the logs get properly grouped by our logging service, but
+  // still use `morgan` to extract HTTP request/response data and properly
+  // implement the middleware. Note that returning `undefined` from this log
+  // formatting function causes `morgan` to not log the request.
+  logger.info([
+    tokens.method(req, res),
+    tokens.url(req, res),
+    tokens.status(req, res),
+    tokens.res(req, res, 'content-length'), '-',
+    tokens['response-time'](req, res), 'ms',
+  ].join(' '))
+  return undefined
+}))
 app.use(createMetricsMiddleware({ basePath }))
 app.use(basePath + '/', router)
 
