@@ -19,6 +19,7 @@ export class OrderbookFetcher {
     let orderbook: StreamedOrderbook | undefined
     const poll = withOrderBookFetcherMetrics(async () => {
       try {
+        logger.info('Fetching orderbook updates...')
         if (orderbook === undefined) {
           logger.debug('Initializing streamed orderbook...')
           orderbook = await StreamedOrderbook.init(web3 as any, {
@@ -28,6 +29,7 @@ export class OrderbookFetcher {
           logger.debug('Fetching orderbook updates...')
           await orderbook.update()
         }
+
         logger.info('Updating orderbooks map...')
         const [orderbooks, encodedOrders] = updateOrderbooks(orderbook)
         this.orderbooks = orderbooks
