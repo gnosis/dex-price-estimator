@@ -1,6 +1,6 @@
 import BN from 'bn.js'
 import Web3 from 'web3'
-import { Fraction, Orderbook, OrderbookJson, Offer, Order, StreamedOrderbook, InvalidAuctionStateError } from '@gnosis.pm/dex-contracts'
+import { Fraction, Orderbook, OrderbookJson, Offer, IndexedOrder, StreamedOrderbook, InvalidAuctionStateError } from '@gnosis.pm/dex-contracts'
 import { BatchExchangeViewer } from '@gnosis.pm/dex-contracts/build/types/BatchExchangeViewer'
 import { CategoryServiceFactory, Category } from 'typescript-logging'
 
@@ -78,7 +78,7 @@ function updateOrderbooks(orderbook: StreamedOrderbook)
   const orderbooks = new Map()
   const encodedOrders: number[] = []
   for (const item of orderbook.getOpenOrders()) {
-    const order: Order<BN> =
+    const order: IndexedOrder<BN> =
     {
       ...item,
       sellTokenBalance: new BN(item.sellTokenBalance.toString()),
@@ -92,7 +92,7 @@ function updateOrderbooks(orderbook: StreamedOrderbook)
   return [orderbooks, Uint8Array.from(encodedOrders)]
 }
 
-function addItemToEncodedOrders(appendTo: number[], order: Order<BN>) {
+function addItemToEncodedOrders(appendTo: number[], order: IndexedOrder<BN>) {
   // Remove '0x'
   appendTo.push(...(new BN(order.user.slice(2), 16).toArray('be', 20)))
   appendTo.push(...(order.sellTokenBalance.toArray('be', 32)))
@@ -103,9 +103,10 @@ function addItemToEncodedOrders(appendTo: number[], order: Order<BN>) {
   appendTo.push(...(order.priceNumerator.toArray('be', 16)))
   appendTo.push(...(order.priceDenominator.toArray('be', 16)))
   appendTo.push(...(order.remainingAmount.toArray('be', 16)))
+  appendTo.push(...(new BN(order.orderId).toArray('be', 2)))
 }
 
-function addItemToOrderbooks(orderbooks: Map<string, Orderbook>, item: Order<BN>) {
+function addItemToOrderbooks(orderbooks: Map<string, Orderbook>, item: IndexedOrder<BN>) {
   const MIN_TRADEABLE_VOLUME = new Fraction(10000, 1)
   const volume = new Fraction(
     item.remainingAmount.gt(item.sellTokenBalance) ? item.sellTokenBalance : item.remainingAmount,
