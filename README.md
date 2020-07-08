@@ -1,5 +1,9 @@
 [![Build Status](https://travis-ci.org/gnosis/dex-price-estimator.svg?branch=master)](https://travis-ci.org/gnosis/dex-price-estimator)
 
+# **:warning: Deprecated :warning:**
+
+This repository has been deprecated in favour of a new [Rust implementation](https://github.com/gnosis/dex-services/tree/master/price-estimator).
+
 # Dex Price Estimator
 
 A service estimating feasible sell prices for Gnosis Protocol.
